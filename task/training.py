@@ -7,10 +7,9 @@ import pickle
 import logging
 from tqdm import tqdm
 from time import time
-import albumentations as A
-from albumentations.pytorch.transforms import ToTensorV2
 # Import PyTorch
 import torch
+import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.nn.utils import clip_grad_norm_
@@ -69,7 +68,7 @@ def training(args):
         valid_trg_input_ids = f.get('valid_trg_input_ids')[:]
         valid_trg_attention_mask = f.get('valid_trg_attention_mask')[:]
 
-    with open(os.path.join(save_path, save_name[:-5] + '_word2id.pkl'), 'rb') as f:
+    with open(os.path.join(save_path, 'word2id.pkl'), 'rb') as f:
         data_ = pickle.load(f)
         src_word2id = data_['src_word2id']
         src_vocab_num = len(src_word2id)
@@ -119,17 +118,15 @@ def training(args):
     #                       decoder_full_model=True)
     #     tgt_subsqeunt_mask = None
     elif args.model_type == 'bart':
-        model = custom_Bart(task=args.task,
-                            isPreTrain=args.isPreTrain, variational=args.variational,
+        model = custom_Bart(isPreTrain=args.isPreTrain, variational=args.variational,
                             variational_mode_dict=variational_mode_dict,
                             src_max_len=args.src_max_len, trg_max_len=args.trg_max_len,
                             emb_src_trg_weight_sharing=args.emb_src_trg_weight_sharing,
                             dropout=args.dropout)
         tgt_subsqeunt_mask = None
     elif args.model_type == 'bert':
-        model = custom_Bert(task=args.task, num_class=128, # Need to refactoring
+        model = custom_Bert(num_class=128, # Need to refactoring
                             isPreTrain=args.isPreTrain, variational=args.variational,
-                            src_language=src_language,
                             variational_mode_dict=variational_mode_dict,
                             src_max_len=args.src_max_len, trg_max_len=args.trg_max_len,
                             emb_src_trg_weight_sharing=args.emb_src_trg_weight_sharing,
@@ -139,12 +136,12 @@ def training(args):
 
     # 2) Dataloader setting
     dataset_dict = {
-        'train': CustomDataset(src_list=train_src_input_ids, src_att_list=train_src_attention_mask,
-                               trg_list=train_trg_list, trg_att_list=train_trg_attention_mask,
-                               min_len=args.min_len, src_max_len=args.src_max_len, trg_max_len=args.trg_max_len),
-        'valid': CustomDataset(src_list=valid_src_input_ids, src_att_list=valid_src_attention_mask,
-                               trg_list=valid_trg_input_ids, trg_att_list=valid_trg_attention_mask,
-                               min_len=args.min_len, src_max_len=args.src_max_len, trg_max_len=args.trg_max_len)
+        'train': Seq2SeqDataset(src_list=train_src_input_ids, src_att_list=train_src_attention_mask,
+                                trg_list=train_trg_input_ids, trg_att_list=train_trg_attention_mask,
+                                min_len=args.min_len, src_max_len=args.src_max_len, trg_max_len=args.trg_max_len),
+        'valid': Seq2SeqDataset(src_list=valid_src_input_ids, src_att_list=valid_src_attention_mask,
+                                trg_list=valid_trg_input_ids, trg_att_list=valid_trg_attention_mask,
+                                min_len=args.min_len, src_max_len=args.src_max_len, trg_max_len=args.trg_max_len)
     }
     dataloader_dict = {
         'train': DataLoader(dataset_dict['train'], drop_last=True,
@@ -203,7 +200,7 @@ def training(args):
                 optimizer.zero_grad(set_to_none=True)
 
                 # Input, output setting
-                src_sequence, src_att, src_img, trg_label, trg_sequence, trg_att = input_to_device(args, batch_iter, device)
+                src_sequence, src_att, trg_sequence, trg_att = input_to_device(args, batch_iter, device)
 
                 # Output pre-processing
                 trg_sequence_gold = trg_sequence[:, 1:]
@@ -235,7 +232,7 @@ def training(args):
                     # Print loss value only training
                     if i == 0 or freq == args.print_freq or i==len(dataloader_dict['train']):
                         acc = (predicted.max(dim=1)[1] == trg_sequence_gold).sum() / len(trg_sequence_gold)
-                        loss = ce_loss.item()
+                        ce_loss = ce_loss.item()
                         dist_loss = dist_loss.item()
                         iter_log = "[Epoch:%03d][%03d/%03d] train_loss:%03.2f | train_latent_loss:%03.2f | train_acc:%03.2f%% | learning_rate:%1.6f | spend_time:%02.2fmin" % \
                             (epoch, i, len(dataloader_dict['train']), 
@@ -249,7 +246,7 @@ def training(args):
                         acc = (predicted.max(dim=1)[1] == trg_sequence_gold).sum() / len(trg_sequence_gold)
                         
                         tb_writer.add_scalar('TRAIN/Total_Loss', total_loss, (epoch-1) * len(dataloader_dict['train']) + i)
-                        tb_writer.add_scalar('TRAIN/Loss', loss, (epoch-1) * len(dataloader_dict['train']) + i)
+                        tb_writer.add_scalar('TRAIN/Loss', ce_loss, (epoch-1) * len(dataloader_dict['train']) + i)
                         tb_writer.add_scalar('TRAIN/Latent_Loss', dist_loss, (epoch-1) * len(dataloader_dict['train']) + i)
                         tb_writer.add_scalar('TRAIN/Accuracy', acc*100, (epoch-1) * len(dataloader_dict['train']) + i)
                         tb_writer.add_scalar('USAGE/CPU_Usage', psutil.cpu_percent(), (epoch-1) * len(dataloader_dict['train']) + i)

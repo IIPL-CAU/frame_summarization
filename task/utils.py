@@ -40,11 +40,11 @@ def model_save_name(args):
     return save_file_name
 
 def results_save_name(args):
-    if not os.path.exists(os.path.join(args.result_path, args.task)):
-        os.mkdir(os.path.join(args.result_path, args.task))
-    if not os.path.exists(os.path.join(args.result_path, args.task, args.data_name)):
-        os.mkdir(os.path.join(args.result_path, args.task, args.data_name))
-    result_path_ = os.path.join(args.result_path, args.task, args.data_name, args.tokenizer)
+    if not os.path.exists(os.path.join(args.result_path)):
+        os.mkdir(os.path.join(args.result_path))
+    if not os.path.exists(os.path.join(args.result_path, args.data_name)):
+        os.mkdir(os.path.join(args.result_path, args.data_name))
+    result_path_ = os.path.join(args.result_path, args.data_name, args.tokenizer)
     if not os.path.exists(result_path_):
         os.mkdir(result_path_)
     if args.tokenizer == 'spm':

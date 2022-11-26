@@ -13,12 +13,12 @@ class Seq2SeqDataset(Dataset):
                 src_tensor = torch.zeros(src_max_len, dtype=torch.long)
                 src_tensor[:len(src)] = torch.tensor(src, dtype=torch.long)
                 src_att_tensor = torch.zeros(src_max_len, dtype=torch.long)
-                src_att_tensor[:len(src_att)] = torch.tensor(src_att_tensor, dtype=torch.long)
+                src_att_tensor[:len(src_att)] = torch.tensor(src_att, dtype=torch.long)
                 # Target tensor
                 trg_tensor = torch.zeros(trg_max_len, dtype=torch.long)
                 trg_tensor[:len(trg)] = torch.tensor(trg, dtype=torch.long)
                 trg_att_tensor = torch.zeros(trg_max_len, dtype=torch.long)
-                trg_att_tensor[:len(trg_att)] = torch.tensor(trg_att_tensor, dtype=torch.long)
+                trg_att_tensor[:len(trg_att)] = torch.tensor(trg_att, dtype=torch.long)
                 # tensor list
                 self.tensor_list.append((src_tensor, src_att_tensor, trg_tensor, trg_att_tensor))
 

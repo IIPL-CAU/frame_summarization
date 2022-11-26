@@ -3,15 +3,14 @@ from collections import defaultdict
 # Import PyTorch
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
+from torch.nn import functional as F
 # Import Huggingface
 from transformers import BartModel, BartConfig
 #
 from ..latent_module.latent import Latent_module 
 
 class custom_Bart(nn.Module):
-    def __init__(self, task: str = 'translation', isPreTrain: bool = True, 
-                 src_language: str = 'en', trg_language: str = 'en',
+    def __init__(self, isPreTrain: bool = True, 
                  variational: bool = True, variational_mode_dict: dict = dict(),
                  src_max_len: int = 768, trg_max_len: int = 300,
                  emb_src_trg_weight_sharing: bool = True, dropout: float = 0.2):
@@ -32,8 +31,6 @@ class custom_Bart(nn.Module):
         """
         self.isPreTrain = isPreTrain
         self.variational = variational
-        self.src_language = src_language
-        self.trg_language = trg_language
         self.emb_src_trg_weight_sharing = emb_src_trg_weight_sharing
         self.model_config = BartConfig.from_pretrained(('facebook/bart-large'))
         # self.model_config.use_cache = False
@@ -80,8 +77,8 @@ class custom_Bart(nn.Module):
                                                latent_add_encoder_out=self.latent_add_encoder_out,
                                                z_var=self.z_var, src_max_len=src_max_len, trg_max_len=trg_max_len)
 
-    def forward(self, src_input_ids, src_attention_mask, src_img,
-                trg_label, trg_input_ids, trg_attention_mask,
+    def forward(self, src_input_ids, src_attention_mask,
+                trg_input_ids, trg_attention_mask,
                 non_pad_position=None, tgt_subsqeunt_mask=None):
 
         # Pre_setting for variational model and translation task

@@ -23,7 +23,6 @@ def str2bool(v):
 
 def path_check(args):
     # Preprocessing Path Checking
-    #(args.preprocess_path, args.task, args.data_name, args.tokenizer)
     if not os.path.exists(args.preprocess_path):
         os.mkdir(args.preprocess_path)
 
@@ -91,7 +90,6 @@ def get_tb_exp_name(args:argparse.Namespace):
     ts = time.strftime('%Y-%b-%d-%H:%M:%S', time.localtime())
 
     exp_name = str()
-    exp_name += "%s - " % args.task
     exp_name += "%s - " % args.model_type
 
     if args.training:
